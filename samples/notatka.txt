@@ -1,0 +1,2 @@
+Przykładowy tekst UTF-8.
+Zażółć gęślą jaźń.

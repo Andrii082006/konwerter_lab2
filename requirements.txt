@@ -1,0 +1,1 @@
+# Lab. 2: wyłącznie biblioteka standardowa Pythona 3.10+
