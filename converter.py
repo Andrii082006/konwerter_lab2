@@ -1,10 +1,17 @@
 """Konwersje CSV <-> JSON dla kamienia milowego Lab. 2."""
+import subprocess
+import shutil
 import csv
 import json
 from pathlib import Path
 
-REGISTRY = {('.csv', '.json'), ('.json', '.csv')}
-
+REGISTRY = {
+    ('.csv', '.json'),
+    ('.json', '.csv'),
+    ('.txt', '.docx'),
+    ('.docx', '.pdf'),
+    ('.odt', '.pdf'),
+}
 
 def available_targets(source: Path) -> list[str]:
     return sorted(dst for src, dst in REGISTRY if src == source.suffix.lower())
@@ -23,6 +30,12 @@ def convert(source: Path, target_format: str, output_dir: Path) -> Path:
     target = output_dir / f'{source.stem}.{target_format}'
     if target.exists():
         raise FileExistsError(f'Plik wynikowy już istnieje: {target}')
+    
+    if source.suffix.lower() == '.txt' and target_format == 'docx':
+        return txt_to_docx(source, target)
+
+    if source.suffix.lower() in ('.docx', '.odt') and target_format == 'pdf':
+        return office_to_pdf(source, target)
     if target_format == 'json':
         with source.open('r', encoding='utf-8-sig', newline='') as stream:
             reader = csv.DictReader(stream)
@@ -55,3 +68,92 @@ def convert(source: Path, target_format: str, output_dir: Path) -> Path:
             writer.writeheader()
             writer.writerows(rows)
     return target
+
+def txt_to_docx(source: Path, target: Path) -> Path:
+    """Konwersja TXT do DOCX z zachowaniem akapitów."""
+    try:
+        from docx import Document
+    except ImportError as exc:
+        raise RuntimeError(
+            "Brak biblioteki python-docx. "
+            "Zainstaluj: python -m pip install python-docx"
+        ) from exc
+
+    text = source.read_text(encoding="utf-8-sig")
+    document = Document()
+
+    for line in text.splitlines():
+        document.add_paragraph(line)
+
+    document.save(target)
+    return target
+
+
+def find_libreoffice() -> str:
+    """Wyszukuje LibreOffice w systemie."""
+    executable = shutil.which("soffice") or shutil.which("libreoffice")
+
+    if executable:
+        return executable
+
+    paths = [
+        Path(r"C:\Program Files\LibreOffice\program\soffice.exe"),
+        Path(r"C:\Program Files (x86)\LibreOffice\program\soffice.exe"),
+    ]
+
+    for path in paths:
+        if path.is_file():
+            return str(path)
+
+    raise RuntimeError(
+        "Nie znaleziono LibreOffice. "
+        "Zainstaluj LibreOffice lub dodaj soffice do PATH."
+    )
+
+
+def office_to_pdf(source: Path, target: Path) -> Path:
+    """Konwersja DOCX lub ODT do PDF przez LibreOffice."""
+    executable = find_libreoffice()
+
+    command = [
+        executable,
+        "--headless",
+        "--convert-to",
+        "pdf",
+        "--outdir",
+        str(target.parent.resolve()),
+        str(source.resolve()),
+    ]
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            "Przekroczono czas oczekiwania na LibreOffice."
+        ) from exc
+    except OSError as exc:
+        raise RuntimeError(
+            f"Nie można uruchomić LibreOffice: {exc}"
+        ) from exc
+
+    if result.returncode != 0:
+        details = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(
+            f"LibreOffice zakończył pracę z błędem "
+            f"{result.returncode}: {details}"
+        )
+
+    if not target.is_file():
+        raise RuntimeError(
+            "LibreOffice nie utworzył oczekiwanego pliku PDF. "
+            + (result.stderr.strip() or result.stdout.strip())
+        )
+
+    return target
+

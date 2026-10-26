@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class ConverterTests(unittest.TestCase):
     def test_targets(self):
         self.assertEqual(available_targets(Path('plik.csv')), ['.json'])
-        self.assertEqual(available_targets(Path('plik.txt')), [])
+        self.assertEqual(available_targets(Path('plik.txt')), ['.docx'])
 
     def test_csv_to_json(self):
         with tempfile.TemporaryDirectory() as folder:

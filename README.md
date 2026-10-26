@@ -24,3 +24,38 @@ W kolejnych laboratoriach planowana jest implementacja konwersji dokumentów TXT
 
 ## Wykorzystane narzędzia
 Python 3, Visual Studio Code, biblioteki standardowe `csv`, `json`, `pathlib` i `unittest`.
+
+
+## Kamień milowy 2 – Laboratorium nr 3
+
+Rozszerzono aplikację o obsługę formatów TXT, DOCX, ODT i PDF.
+
+### Obsługiwane konwersje
+
+| Format wejściowy | Format wyjściowy | Narzędzie |
+|---|---|---|
+| CSV | JSON | Python csv/json |
+| JSON | CSV | Python csv/json |
+| TXT | DOCX | python-docx |
+| DOCX | PDF | LibreOffice |
+| ODT | PDF | LibreOffice |
+
+### Wymagania
+
+- Python 3
+- Biblioteka python-docx
+- LibreOffice do konwersji PDF
+
+Instalacja zależności:
+
+`python -m pip install -r requirements.txt`
+
+### Ograniczenia
+
+Konwersja TXT → DOCX przenosi tekst i podział na akapity, ale nie odtwarza zaawansowanego formatowania.
+
+Konwersje do PDF wymagają zainstalowanego LibreOffice. Aplikacja nie nadpisuje istniejących plików wynikowych.
+
+### Wykorzystane narzędzia
+
+Python, python-docx, LibreOffice, moduły subprocess i pathlib.
